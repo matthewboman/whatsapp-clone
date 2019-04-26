@@ -1,0 +1,17 @@
+overwrite: true
+schema: ./schema/typeDefs.ts
+require: ts-node/register/transpile-only
+generates:
+  ./types.d.ts:
+    plugins:
+      - typescript-common
+      - typescript-resolvers
+    config:
+      optionalType: undefined | null
+      contextType: ./context#Context
+      mappers:
+        Chat: ./entity/chat#Chat
+        Message: ./entity/message#Message
+        User: ./entity/user#User
+      scalers:
+        Date: Date
