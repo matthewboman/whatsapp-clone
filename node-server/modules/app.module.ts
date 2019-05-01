@@ -6,6 +6,7 @@ import { AuthModule } from './auth'
 import { UserModule } from './user'
 import { ChatModule } from './chat'
 import { MessageModule } from './message'
+import { RecipientModule } from './recipient'
 
 export interface IAppModuleConfig {
   connection: Connection,
@@ -21,7 +22,8 @@ export const AppModule = new GraphQLModule<IAppModuleConfig>({
     }),
     UserModule,
     ChatModule,
-    MessageModule
+    MessageModule,
+    RecipientModule
   ],
   configRequired: true
 })

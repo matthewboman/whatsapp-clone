@@ -1,4 +1,5 @@
 import { ModuleContext } from '@graphql-modules/core'
+import { PubSub, withFilter } from 'apollo-server-express'
 
 import { Message } from '../../../entity/message'
 import { IResolvers } from '../../../types'
@@ -8,6 +9,28 @@ export default {
   Query: {
     // The ordering depends on the messages
     chats: (obj, args, { injector }) => injector.get(MessageProvider).getChats()
+  },
+
+  Mutation: {
+    addMessage: async (obj, { chatId, content }, { injector }) =>
+      injector.get(MessageProvider).addMessage(chatId, content),
+    removeMessages: async (obj, { chatId, messageId, all }, { injector }) =>
+      injector.get(MessageProvider).removeMessages(chatId, {
+        messageIds: messageIds || undefined,
+        all: all || false
+      }),
+    removeChat: async (obj, { chatId }, { injector }) =>
+      injector.get(MessageProvider).removeChat(chatId)
+  },
+
+  Subscription: {
+    messageAdded: {
+      subscribe: withFilter(
+        (root, args, { injector }: ModuleContext) => injector.get(PubSub).asyncIterator('messageAdded'),
+        (data: { messageAdded: Message }, variables, { injector }: ModuleContext) =>
+          data && injector.get(MessageProvider).filterMessageAdded(data.messageAdded)
+      )
+    }
   },
 
   Chat: {

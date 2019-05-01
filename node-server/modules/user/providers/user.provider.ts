@@ -1,4 +1,5 @@
 import { Injectable, ProviderScope } from '@graphql-modules/di'
+import { PubSub } from 'apollo-server-express'
 import { Connection } from 'typeorm'
 import cloudinary from 'cloudinary'
 
@@ -9,6 +10,7 @@ import { AuthProvider } from '../../auth/providers/auth.provider'
 export class UserProvider {
   constructor(
     private connection: Connection,
+    private pubsub: PubSub,
     private authProvider: AuthProvider
   ) {}
 
@@ -41,7 +43,16 @@ export class UserProvider {
     this.currentUser.picture = picture || this.currentUser.picture
 
     await this.repository.save(this.currentUser)
+
+    this.pubsub.publish('userUpdated', {
+      userUpdated: this.currentUser
+    })
+
     return this.currentUser
+  }
+
+  filterUserAddedOrUpdated(userAddedOrUpdated: User) {
+    userAddedOrUpdated.id !== this.currentUser.id
   }
 
   uploadProfilePic(filePath: string) {

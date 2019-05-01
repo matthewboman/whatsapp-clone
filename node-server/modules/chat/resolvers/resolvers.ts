@@ -14,11 +14,21 @@ export default {
     updateUser: (obj, { name, picture }, { injector }) => injector.get(ChatProvider).updateUser({
       name: name || '',
       picture: picture || ''
-    })
+    }),
+    addChat: (obj, { userId }, { injector }) => injector.get(ChatProvider).addChat(userId),
+    removeChat: (obj, { chatId, }, { injector }) => injector.get(ChatProvider).removeChat(chatId),
   },
   Subscription: {
+    chatAdded: {
+      subscribe: withFilter(
+        (root, args, { injector }: ModuleContext) => injector.get(PubSub).asyncIterator('chatAdded'),
+        (data: { chatAdded: Chat, creatorId: string }, variables, { injector }: ModuleContext) =>
+          data && injector.get(ChatProvider).filterChatAddedOrUpdated(data.chatAdded, data.creatorId)
+      )
+    },
     chatUpdated: {
-      subscribe: withFilter((rot, args, { injector }: ModuleContext) => injector.get(PubSub).asyncIterator('chatUpdated'),
+      subscribe: withFilter(
+        (root, args, { injector }: ModuleContext) => injector.get(PubSub).asyncIterator('chatUpdated'),
         (data: { chatUpdated: Chat, updaterId: string }, variables, { injector }: ModuleContext) =>
           data && injector.get(ChatProvider).filterChatAddedOrUpdated(data.chatUpdated, data.updaterId)
       )

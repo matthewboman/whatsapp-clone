@@ -75,7 +75,7 @@ export default ({ history }: ChatsNavbarProps) => {
           vertical: 'top',
           horizontal: 'right'
         }}
-      />
+      >
         <Style>
           <List>
             <ListItem className="ChatsNavbar-options-item" button onClick={navToSettings}>

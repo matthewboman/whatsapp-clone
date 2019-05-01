@@ -4,7 +4,13 @@ type Query {
 }
 
 type Subscription {
+  chatAdded: Chat
   chatUpdated: Chat
+}
+
+type Mutation {
+  addChat(userId: ID!): Chat
+  removeChat(chatId: ID!): ID
 }
 
 type Chat {

@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react'
 import { RouteComponentProps } from 'react-router-dom'
 
+import AddChatButton from './AddChatButton'
 import Navbar from '../Navbar'
 import ChatsList from './ChatsList'
 import ChatsNavbar from './ChatsNavbar'
@@ -8,10 +9,11 @@ import ChatsNavbar from './ChatsNavbar'
 export default ({ history }: RouteComponentProps) => (
   <div className="ChatsListScreen Screen">
     <Navbar>
-      <ChatsNavbar history={history}/>
+      <ChatsNavbar history={history} />
     </Navbar>
     <Suspense fallback={null}>
-      <ChatsList />
+      <ChatsList history={history} />
     </Suspense>
+    <AddChatButton history={history} />
   </div>
 )

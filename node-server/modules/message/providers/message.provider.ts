@@ -1,5 +1,6 @@
 import { Injectable } from '@graphql-modules/di'
 import { Connection } from 'typeorm'
+import { PubSub } from 'apollo-server-express'
 
 import { MessageType } from '../../../db'
 import { Chat } from '../../../entity/chat'
@@ -13,6 +14,7 @@ import { UserProvider } from '../../user/providers/user.provider'
 export class MessageProvider {
   constructor(
     private connection: Connection,
+    private pubsub: PubSub,
     private chatProvider: ChatProvider,
     private authProvider: AuthProvider,
     private userProvider: UserProvider
@@ -23,6 +25,160 @@ export class MessageProvider {
 
   createQueryBuilder() {
     return this.connection.createQueryBuilder(Message, 'message')
+  }
+
+  async addMessage(chatId: string, content: string) {
+    if (content === null || content === '') {
+      throw new Error(`Cannot add empy or null messages`)
+    }
+
+    let chat = await this.chatProvider.createQueryBuilder()
+      .whereInIds(chatId)
+      .innerJoinAndSelect('chat.allTimeMembers', 'allTimeMembers')
+      .innerJoinAndSelect('chat.listingMembers', 'listingMembers')
+      .getOne()
+
+    if (!chat) {
+      throw new Error(`Cannot find chat ${chatId}`)
+    }
+
+    let holders: User[]
+
+    if (!chat.name) {
+      // single chat
+      if (!chat.listingMembers.map(user => user.id).includes(this.currentUser.id)) {
+        throw new Error(`The chat ${chatId} must be listed for the current user in order to add a message`)
+      }
+
+      const user = chat.allTimeMembers.find(user => user.id !== this.currentUser.id)
+
+      if (!user) {
+        throw new Error(`Cannot find the receiver`)
+      }
+
+      if (!chat.listingMembers.find(listingMember => listingMember.id === user.id)) {
+        chat.listingMembers.push(user)
+        await this.chatProvider.repository.save(chat)
+
+        this.pubsub.publish('chatAdded', {
+          creatorId: this.currentUser.id,
+          chatAdded: chat
+        })
+      }
+
+      holders = chat.listingMembers
+
+    } else {
+      // TODO: implement for groups
+      holders = chat.listingMembers
+    }
+
+    const message = await this.repository.save(new Message({
+      chat,
+      sender: this.currentUser,
+      content,
+      type: MessageType.TEXT,
+      holders
+    }))
+
+    this.pubsub.publish('messageAdded', { messageAdded: message })
+
+    return message || null
+  }
+
+  async _removeMessages(chatId: string, { messageIds, all }: { messageIds?: string[], all?: boolean } = {}) {
+    const chat = await this.chatProvider
+      .createQueryBuilder()
+      .whereInIds(chatId)
+      .innerJoinAndSelect('chat.listingMembers', 'listingMembers')
+      .innerJoinAndSelect('chat.messages', 'messages')
+      .innerJoinAndSelect('messages.holders', 'holders')
+      .getOne()
+
+    if (!chat) {
+      throw new Error(`Cannot find chat ${chatId}`)
+    }
+
+    if (!chat.listingMembers.find(user => user.id === this.currentUser.id)) {
+      throw new Error(`The chat/group ${chatId} is not listed for the current user`)
+    }
+
+    if (all && messageIds) {
+      throw new Error(`Cannot specify both 'all' and 'messageIds'`)
+    }
+
+    if (!all && !messageIds) {
+      throw new Error(`'all' or 'messageIds' must be specified`)
+    }
+
+    let deletedIds: string[] = []
+    let removedMessages: Message[] = []
+
+    chat.messages = await chat.messages.reduce<Promise<Message[]>>(async (filtered$, message) => {
+      const filtered = await filtered$
+
+      if (all || !messageIds.includes(message.id)) {
+        deletedIds.push(message.id)
+        message.holders = message.holders.filter(user => user.id !== this.currentUser.id)
+      }
+
+      if (message.holders.length === 0) {
+        removedMessages.push(message)
+      } else {
+        await this.repository.save(message)
+        filtered.push(mressage)
+      }
+
+      return filtered
+    }, Promse.resolve([]))
+
+    return { deletedIds, removedMessages }
+  }
+
+  async removeMessages(chatId: string, { messageIds, all }: { messageIds?: string, all?: boolean } = {}) {
+    const { deletedIds, removedMessages } = await this._removeMessages(chatId, { messageIds, all })
+
+    for (let message of removedMessages) {
+      await this.repository.remove(message)
+    }
+
+    return deletedIds
+  }
+
+  async _removeChatGetMessages(chatId: string) {
+    let messages = await this.createQueryBuilder()
+      .innerJoin(
+        'message.chat',
+        'chat',
+        'chat.id = :chatId',
+        { chatId }
+      )
+      .innerJoinAndSelect('message.holders', 'holders')
+      .getMany()
+
+    messages = messages.map(message => ({
+      ...message,
+      holders: message.holders.filter(user => user.id !== this.currentUser.id)
+    }))
+
+    return messages
+  }
+
+  async removeChat(chatId: string, messages?: Message[]) {
+    if (!messages) {
+      messages = await this._removeChatGetMessages(chatId)
+    }
+
+    for (let message of messages) {
+      message.holders = message.holders.filter(user => user.id !== this.currentUser.id)
+
+      if (message.holders.length === 0) {
+        await this.repository.remove(message)
+      } else {
+        await this.repository.save(message)
+      }
+    }
+    return await this.chatProvider.removeChat(chatId)
   }
 
   async getMessageSender(message: Message) {
@@ -180,5 +336,20 @@ export class MessageProvider {
       .getOne()
 
     return latestMessage ? latestMessage.createdAt : null
+  }
+
+  async filterMessageAdded(messageAdded: Message) {
+    const users = await this.userProvider.createQueryBuilder()
+      .innerJoin(
+        'user.listingMemberChats',
+        'listingMemberChats',
+        'listingMemberChats.id = :chatId',
+        { chatId: messageAdded.chat.id }
+      )
+      .getMany()
+
+    const relevantUsers = users.filter(user => user.id != messageAdded.sender.id)
+
+    return relevantUsers.some(user => user.id === this.currentUser.id)
   }
 }

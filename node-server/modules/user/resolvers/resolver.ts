@@ -1,4 +1,5 @@
 import { ModuleContext } from '@graphql-modules/core'
+import { PubSub, withFilter } from 'apollo-server-express'
 
 import { User } from '../../../entity/user'
 import { IResolvers } from '../../../types'
@@ -14,5 +15,21 @@ export default {
       name: name || '',
       picture: picture || ''
     })
+  },
+  Subscription: {
+    userAdded: {
+      subscribe: withFilter(
+        (root, args, { injector }: ModuleContext) => injector.get(PubSub).asyncIterator('userAdded'),
+        (data: { userAdded: User }, variables, { injector }: ModuleContext) =>
+          data && injector.get(UserProvider).filterUserAddedOrUpdated(data.userAdded)
+      )
+    },
+    userUpdated: {
+      subscribe: withFilter(
+        (root, args, { injector }: ModuleContext) => injector.get(PubSub).asyncIterator('userAdded'),
+        (data: { userUpdated: User }, variables, { injector }: ModuleContext) =>
+          data && injector.get(UserProvider).filterUserAddedOrUpdated(data.userUpdated)
+      )
+    }
   }
 } as IResolvers

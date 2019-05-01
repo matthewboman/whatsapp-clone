@@ -8,6 +8,7 @@ import {
 
 import Chat from './chat'
 import Message from './message'
+import Recipient from './recipient'
 
 interface UserConstructor {
   username?: string
@@ -47,6 +48,9 @@ export class User {
 
   @OneToMany(type => Message, message => message.sender)
   senderMessages: Message[]
+
+  @OneToMany(type => Recipient, recipient => recipient.user)
+  recipients: Recipient[]
 
   constructor({ username, password, name, picture }: UserConstructor = {}) {
     if (username) {

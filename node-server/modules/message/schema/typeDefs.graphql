@@ -23,3 +23,12 @@ type Message {
   #Computed property
   ownership: Boolean!
 }
+
+type Mutation {
+  addMessage(chatId: ID!, content: String!): Message
+  removedMessages(chatId: ID!, messageIds: [ID!], all: Boolean): [ID]!
+}
+
+type Subscription {
+  messageAdded: Message
+}

@@ -31,7 +31,65 @@ export class ChatProvider {
     return chat || null
   }
 
-  async getChatName(chat: Chat) {
+  async addChat(userId: string) {
+    const user = await this.userProvider
+      .createQueryBuilder()
+      .whereInIds(userId)
+      .getOne()
+
+    if (!user) {
+      throw new Error(`User ${userId} doesn't exist`)
+    }
+
+    let chat = await this.createQueryBuilder()
+      .where('chat.name IS NULL')
+      .innerJoin(
+        'chat.allTimeMembers',
+        'allTimeMembers1',
+        'allTimeMembers1.id = :currentUserId',
+        { currentUserId: this.currentUser.id }
+      )
+      .innerJoin(
+        'chat.allTimeMembers',
+        'allTimeMembers2',
+        'allTimeMembers2.id = :userId',
+        { userId: userId }
+      )
+      .innerJoinAndSelect('chat.listingMembers', 'listingMembers')
+      .getOne()
+
+    if (chat) {
+      // chat already exists && both users are already in the userIds array
+      let listingMembers = await this.userProvider.createQueryBuilder()
+        .innerJoin(
+          'user.listingMemberChats',
+          'listingMemberChats',
+          'listingMemberChats.id = :chatId',
+          { chatId: chat.id }
+        )
+        .getMany()
+
+      if (!listingMembers.find(user => user.id === this.currentUser.id)) {
+        // the chat isn't listed for the current user
+        chat.listingMembers.push(this.currentUser)
+        chat = await this.repository.save(chat)
+
+        return chat || null
+      } else {
+        return chat
+      }
+    } else {
+      // create the chat
+      chat = await this.repository.save(new Chat({
+        allTimeMembers: [this.currentUser, user],
+        listingMembers: [this.currentUser]
+      }))
+
+      return chat || null
+    }
+  }
+
+    async getChatName(chat: Chat) {
     if(chat.name) {
       return chat.name
     }
@@ -48,6 +106,47 @@ export class ChatProvider {
       .getOne()
 
     return (user && user.name) || null
+  }
+
+  async removeChat(chatId: string) {
+    const chat = await this.createQueryBuilder()
+      .whereInIds(Number(chatId))
+      .innerJoinAndSelect('chat.listingMembers', 'listingMembers')
+      .leftJoinAndSelect('chat.owner', 'owner')
+      .getOne()
+
+    if (!chat) {
+      throw new Error(`The chat ${chatId} doesn't exist`)
+    }
+
+    if (!chat.name) {
+      // single chat
+      if (!chat.listingMembers.find(user => user.id === this.currentUser.id)) {
+        throw new Error(`The user is not a listing member of the chat ${chatId}`)
+      }
+
+      // Remove the current user from who gets the chat listed
+      chat.listingMembers = chat.listingMembers.filter(user => user.id !== this.currentUser.id)
+
+      if (chat.listingMembers.length === 0) {
+        await this.repository.remove(chat)
+      } else {
+        await this.repository.save(chat)
+      }
+
+      return chatId
+    } else {
+      // group chat
+      chat.listingMembers = chat.listingMembers.filter(user => user.id !== this.currentUser.id)
+
+      if (chat.listingMembers.lenth === 0) {
+        await this.repository.remove(chat)
+      } else {
+        chat.owner = chat.listingMembers[0]
+        await this.repository.save(chat)
+      }
+      return chatId
+    }
   }
 
   async getChatPicture(chat: Chat) {

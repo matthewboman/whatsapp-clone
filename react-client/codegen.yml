@@ -1,4 +1,4 @@
-schema: ../whatsapp-clone-server/schema/typeDefs.ts
+schema: ../node-server/schema/typeDefs.ts
 documents:
   - ./src/**/*.tsx
   - ./src/**/*.ts
