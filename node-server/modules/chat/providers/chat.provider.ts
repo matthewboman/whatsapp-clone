@@ -112,6 +112,8 @@ export class ChatProvider {
     const chat = await this.createQueryBuilder()
       .whereInIds(Number(chatId))
       .innerJoinAndSelect('chat.listingMembers', 'listingMembers')
+      .leftJoinAndSelect('chat.actualGroupMembers', 'actualGroupMembers')
+      .leftJoinAndSelect('chat.admins', 'admins')
       .leftJoinAndSelect('chat.owner', 'owner')
       .getOne()
 
@@ -131,6 +133,16 @@ export class ChatProvider {
       if (chat.listingMembers.length === 0) {
         await this.repository.remove(chat)
       } else {
+        // remove current user from chat members
+        chat.actualGroupMembers = chat.actualGroupMembers
+          && chat.actualGroupMembers.filter(user => user.id !== this.currentUser.id)
+
+        // remove current user from admins
+        chat.admins = chat.admins && chat.admins.filter(user => user.id !== this.currentUser.id)
+
+        // if there are no more admins, set owner to null so chat is read-only
+        chat.owner = chat.admins && chat.admins[0] || null
+
         await this.repository.save(chat)
       }
 
@@ -205,6 +217,32 @@ export class ChatProvider {
     return owner || null
   }
 
+  getChatActualGroupdMembers(chat: Chat) {
+    return this.userProvider.createQueryBuilder()
+      .innerJoin(
+        'user.actualGroupMemberChats',
+        'actualGroupMemberChats',
+        'actualGroupMemberChats.id = :chatId',
+        { chatId: chat.id }
+      )
+      .getMany()
+  }
+
+  async isChatGroup(chat: Chat) {
+    return !!chat.name
+  }
+
+  getChatAdmins(chat: Chat) {
+    return this.userProvider.createQueryBuilder()
+      .innerJoin(
+        'user.adminChats',
+        'adminChats',
+        'adminChats.id = chatId',
+        { chatId: chat.id }
+      )
+      .getMany()
+  }
+
   async filterChatAddedOrUpdated(chatAddedOrUpdated: Chat, creatorOrUpdaterId: string) {
     return (
       creatorOrUpdaterId !== this.currentUser.id &&
@@ -246,5 +284,62 @@ export class ChatProvider {
     })
 
     return this.currentUser
+  }
+
+  async addGroup(userIds: string[], { groupName, groupPicture }: { groupName?: string, groupPicture?: string} = {}) {
+    let users: User[] = []
+
+    for (let userId of userIds) {
+      const user = await this.userProvider.createQueryBuilder()
+        .whereInIds(userId)
+        .getOne()
+
+      if (!user) {
+        throw new Error(`User ${userId} doesn't exist`)
+      }
+
+      users.push(user)
+    }
+
+    const chat = await this.repository.save(
+      new Chat({
+        name: groupName,
+        admins: [this.currentUser],
+        picture: groupPicture || undefined,
+        owner: this.currentUser,
+        allTimeMembers: [...users, this.currentUser],
+        listingMembers: [...users, this.currentUser],
+        actualGroupMembers: [...users, this.currentUser]
+      })
+    )
+
+    this.pubsub.publish('chatAdded', {
+      creatorId: this.currentUser.id,
+      chatAdded.chat
+    })
+
+    return chat || null
+  }
+
+  async updateChat(chatId: string, { name, picture }: { name?: string, picture?: string} = {} ) {
+    const chat = await this.createQueryBuilder()
+      .whereInIds(chatId)
+      .getOne()
+
+    if (!chat) return null
+    if (!chat.name) return chat
+
+    name = name || chat.name
+    picture = picture || chat.picture
+    Object.assign(chat, { name, picture })
+
+    await this.repository.save(chat)
+
+    this.pubsub.publish('chatUpdated', {
+      updaterId: this.currentUser.id,
+      chatUpdated: chat
+    })
+
+    return chat || null
   }
 }

@@ -11,6 +11,15 @@ type Subscription {
 type Mutation {
   addChat(userId: ID!): Chat
   removeChat(chatId: ID!): ID
+
+  addAdmins(groupId: ID!, userId: [ID!]!): [ID]!
+  removeAdmins(groupId: ID!, userId: [ID!]!): [ID]!
+
+  addMembers(groupId: ID!, userIds: [ID!]!): [ID]!
+  removeMembers(groupId: ID!, userIds: [ID!]!): [ID]!
+
+  addGroup(userIds: [ID!]!, groupName: String!, groupPicture: String): Chat
+  updateChat(chatId: ID!, name: String, picture: String): Chat
 }
 
 type Chat {
@@ -24,6 +33,12 @@ type Chat {
   allTimeMembers: [User!]!
   #Whoever gets the chat listed
   listingMembers: [User!]!
+  #Actual members of the groups. Null for chats
+  actualGroupMembers: [User!]
+  #Admins are null for chats
+  admins: [User!]
   #If a group is read-only
   owner: User
+  #Computed property
+  isGroup: Boolean!
 }

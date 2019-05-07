@@ -104,7 +104,7 @@ interface MessageListProps {
 
 export default ({ chatId }: MessageListProps) => {
   const {
-    data: { chat: { messages } }
+    data: { chat: { messages, isGroup } }
   } = useQuery<MessagesListQuery.Query, MessagesList.Query.Variables>(
     query,
     {
@@ -133,11 +133,18 @@ export default ({ chatId }: MessageListProps) => {
             key={message.id}
             className={`MessagesList-message MessagesList-message-${message.ownership ? 'mine' : 'others'}`}
           >
+            {
+              isGroup && !message.ownership && (
+                <div className="MessagesList-message-sender">
+                  { message.sender.name }
+                </div>
+              )
+            }
             <div className="MessagesList-message-contents">
               {message.content}
             </div>
             <span className="MessagesList-message-timestamp">
-              {moment(message.createdAt).format('HH:mm')}
+              { moment(message.createdAt).format('HH:mm') }
             </span>
           </div>
         ))

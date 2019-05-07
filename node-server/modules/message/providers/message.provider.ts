@@ -36,6 +36,7 @@ export class MessageProvider {
       .whereInIds(chatId)
       .innerJoinAndSelect('chat.allTimeMembers', 'allTimeMembers')
       .innerJoinAndSelect('chat.listingMembers', 'listingMembers')
+      .leftJoinAndSelect('chat.actualGroupMembers', 'actualGroupMembers')
       .getOne()
 
     if (!chat) {
@@ -69,8 +70,10 @@ export class MessageProvider {
       holders = chat.listingMembers
 
     } else {
-      // TODO: implement for groups
-      holders = chat.listingMembers
+      if (!chat.actualGroupMembers || !chat.actualGroupMembers.find(user => user.id === this.currentUser.id)) {
+        throw new Error(`The user is not a member of the group ${chatId}`)
+      }
+      holders = chat.actualGroupMembers
     }
 
     const message = await this.repository.save(new Message({
@@ -339,17 +342,31 @@ export class MessageProvider {
   }
 
   async filterMessageAdded(messageAdded: Message) {
-    const users = await this.userProvider.createQueryBuilder()
-      .innerJoin(
-        'user.listingMemberChats',
-        'listingMemberChats',
-        'listingMemberChats.id = :chatId',
-        { chatId: messageAdded.chat.id }
-      )
-      .getMany()
+    let users: User[]
+
+    if (!messageAdded.chat.name) {
+      // chat
+      users = await this.userProvider.createQueryBuilder()
+        .innerJoin(
+          'user.listingMemberChats',
+          'listingMemberChats',
+          'listingMemberChats.id = :chatId',
+          { chatId: messageAdded.chat.id }
+        )
+        .getMany()
+    } else {
+      // group
+      users = await this.userProvider.createQueryBuilder()
+        .innerJoin(
+          'user.actualGroupMemberChats',
+          'actualGroupMemberChats',
+          'actualGroupMemberChats.id = :chatId',
+          { chatId: messageAdded.chat.id }
+        )
+        .getMany()
+    }
 
     const relevantUsers = users.filter(user => user.id != messageAdded.sender.id)
-
     return relevantUsers.some(user => user.id === this.currentUser.id)
   }
 }

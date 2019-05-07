@@ -17,6 +17,14 @@ export default {
     }),
     addChat: (obj, { userId }, { injector }) => injector.get(ChatProvider).addChat(userId),
     removeChat: (obj, { chatId, }, { injector }) => injector.get(ChatProvider).removeChat(chatId),
+    addGroup: (obj, { userIds, groupName, groupPicture }, { injector }) => injector.get(ChatProvider).addGroup(
+      userIds,
+      { groupName: groupName || '', groupPicture: groupPicture || '' }
+    ),
+    updateChat: (obj, { chatId, name, picture }, { injector }) => injector.get(ChatProvider).updateChat(
+      chatId,
+      { name: name || '', picture: picture || '' }
+    )
   },
   Subscription: {
     chatAdded: {
@@ -39,6 +47,9 @@ export default {
     picture: (chat, args, { injector }) => injector.get(ChatProvider).getChatPicture(chat),
     allTimeMembers: (chat, args, { injector }) => injector.get(ChatProvider).getChatAllTimeMembers(chat),
     listingMembers: (chat, args, { injector }) => injector.get(ChatProvider).getChatListingMembers(chat),
-    owner: (chat, args, { injector }) => injector.get(ChatProvider).getChatOwner(chat)
+    actualGroupMembers: (chat, args, { injector }) => injector.get(ChatProvider).getChatActualGroupdMembers(chat),
+    admins: (chat, args, { injector }) => injector.get(ChatProvider).getChatAdmins(chat),
+    owner: (chat, args, { injector }) => injector.get(ChatProvider).getChatOwner(chat),
+    isGroup: (chat, args, { injector }) => injector.get(ChatProvider).isChatGroup(chat)
   }
 } as IResolvers
