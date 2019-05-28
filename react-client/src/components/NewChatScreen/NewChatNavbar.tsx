@@ -1,7 +1,7 @@
 import React from 'react'
 import { History } from 'history'
 import { Button } from '@material-ui/core'
-import { ArrrowBack as ArrrowBackIcon } from '@material-ui/icons'
+import { ArrowBack as ArrrowBackIcon } from '@material-ui/icons'
 import styled from 'styled-components'
 
 const Style = styled.div`

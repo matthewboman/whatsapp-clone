@@ -11,7 +11,7 @@ export type SubscriptionOptions<T, TVariables> = {
   onSubscriptionData?: (options?: { client?: DataProxy; subscriptionData?: T}) => any
 }
 
-export const usesubscription = <T, TVariables = OperationVariables>(
+export const useSubscription = <T, TVariables = OperationVariables>(
   query: DocumentNode,
   options: SubscriptionOptions<T, TVariables> = {}
 ) : {

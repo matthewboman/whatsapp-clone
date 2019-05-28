@@ -21,7 +21,7 @@ export default {
       userIds,
       { groupName: groupName || '', groupPicture: groupPicture || '' }
     ),
-    updateChat: (obj, { chatId, name, picture }, { injector }) => injector.get(ChatProvider).updateChat(
+    updateGroup: (obj, { chatId, name, picture }, { injector }) => injector.get(ChatProvider).updateChat(
       chatId,
       { name: name || '', picture: picture || '' }
     )

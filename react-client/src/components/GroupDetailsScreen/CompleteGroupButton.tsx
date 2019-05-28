@@ -27,7 +27,7 @@ const Style = styled.div`
   }
 `
 
-const mutations = gql`
+const mutation = gql`
   mutation CompleteGroupButtonMutation(
     $userIds: [ID!]!
     $groupName: String!
@@ -50,37 +50,36 @@ interface CompleteGroupButtonProps {
 export default ({ history, users, groupName, groupPicture}: CompleteGroupButtonProps) => {
   const me = useMe()
 
-  const addGroup useMutation<CompleteGroupButtonMutation.Mutation, CompleteGroupButtonMutation.Variables>(
+  const addGroup = useMutation<CompleteGroupButtonMutation.Mutation,CompleteGroupButtonMutation.Variables>(
     mutation,
     {
       optimisticResponse: {
-        __typeName: 'Mutation',
+        __typename: 'Mutation',
         addGroup: {
-          __typeName: 'Chat',
-          id: uniquid(),
+          __typename: 'Chat',
+          id: uniqid(),
           name: groupName,
           picture: groupPicture,
           allTimeMembers: users,
           owner: me,
           isGroup: true,
-          lastMessage: null
-        }
+          lastMessage: null,
+        },
       },
-      variables {
+      variables: {
         userIds: users.map(user => user.id),
         groupName,
-        groupPicture
+        groupPicture,
       },
       update: (client, { data: { addGroup } }) => {
         client.writeFragment({
           id: defaultDataIdFromObject(addGroup),
           fragment: fragments.chat,
           fragmentName: 'Chat',
-          data: addGroup
+          data: addGroup,
         })
 
         let chats
-
         try {
           chats = client.readQuery<Chats.Query>({
             query: queries.chats,
@@ -92,10 +91,10 @@ export default ({ history, users, groupName, groupPicture}: CompleteGroupButtonP
 
           client.writeQuery({
             query: queries.chats,
-            data: { chats }
+            data: { chats },
           })
         }
-      }
+      },
     }
   )
 

@@ -20,9 +20,8 @@ export default {
     userAdded: {
       subscribe: withFilter(
         (root, args, { injector }: ModuleContext) => injector.get(PubSub).asyncIterator('userAdded'),
-        (data: { userAdded: User }, variables, { injector }: ModuleContext) =>
-          data && injector.get(UserProvider).filterUserAddedOrUpdated(data.userAdded)
-      )
+        (data: { userAdded: User }, variables, { injector }: ModuleContext) => data && injector.get(UserProvider).filterUserAddedOrUpdated(data.userAdded),
+      ),
     },
     userUpdated: {
       subscribe: withFilter(

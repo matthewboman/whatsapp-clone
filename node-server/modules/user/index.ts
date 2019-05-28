@@ -5,7 +5,7 @@ import { loadResolversFiles, loadSchemaFiles } from '@graphql-modules/sonar'
 import { Express } from 'express'
 import multer from 'multer'
 import tmp from 'tmp'
-import cloudinary from 'cloudinary'
+import * as cloudinary from 'cloudinary'
 
 import { APP } from '../app.symbols'
 import { AuthModule } from '../auth'

@@ -1,7 +1,7 @@
 import { Injectable, ProviderScope } from '@graphql-modules/di'
 import { PubSub } from 'apollo-server-express'
 import { Connection } from 'typeorm'
-import cloudinary from 'cloudinary'
+import * as cloudinary from 'cloudinary'
 
 import { User } from '../../../entity/user'
 import { AuthProvider } from '../../auth/providers/auth.provider'

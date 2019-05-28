@@ -51,7 +51,7 @@ export class Chat {
   @JoinTable()
   listingMembers: User[]
 
-  @ManyToMany(type => User, user => user.actualGroupMembers, {
+  @ManyToMany(type => User, user => user.actualGroupMemberChats, {
     cascade: ['insert', 'update'],
     eager: false
   })

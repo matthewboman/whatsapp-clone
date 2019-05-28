@@ -43,7 +43,7 @@ export class User {
   @ManyToMany(type => Chat, chat => chat.actualGroupMembers)
   actualGroupMemberChats: Chat[]
 
-  @ManyToMany(type = Chat, chat => chat.admins)
+  @ManyToMany(type => Chat, chat => chat.admins)
   adminChats: Chat[]
 
   @ManyToMany(type => Message, message => message.holders)

@@ -61,7 +61,7 @@ export class Message {
     content,
     createdAt,
     type,
-    recipient,
+    recipients,
     holders,
     chat
   }: MessageConstructor = {}) {
@@ -79,7 +79,7 @@ export class Message {
     }
     if(recipients) {
       recipients.forEach(recipient => recipient.message = this)
-      this.recipient = recipient
+      this.recipients = recipients
     }
     if (holders) {
       this.holders = holders

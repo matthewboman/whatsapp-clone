@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button } from '@material-ui/core'
-import { ArrowBackIcon } from '@material-ui/icons'
+import { ArrowBack as ArrowBackIcon } from '@material-ui/icons'
 import { History } from 'history'
 import styled from 'styled-components'
 

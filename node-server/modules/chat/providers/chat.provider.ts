@@ -315,7 +315,7 @@ export class ChatProvider {
 
     this.pubsub.publish('chatAdded', {
       creatorId: this.currentUser.id,
-      chatAdded.chat
+      chatAdded: chat
     })
 
     return chat || null

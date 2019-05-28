@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button } from '@material-ui/core'
-import { AddIcon } from '@material-ui/icons'
+import { Add as AddIcon } from '@material-ui/icons'
 import { History } from 'history'
 import styled from 'styled-components'
 

@@ -5,7 +5,7 @@ import { CheckCircle } from '@material-ui/icons'
 import styled from 'styled-components'
 
 import * as fragments from '../graphql/fragments'
-import { UsersListQuery, User } '../graphql/types'
+import { UsersListQuery, User } from '../graphql/types'
 
 const Style = styled.div`
   .UsersList-users-list {
@@ -52,7 +52,7 @@ const query = gql`
 
 interface UsersListProps {
   selectable?: boolean
-  onSelectionChange?: (users: User.Fragment[] => void)
+  onSelectionChange?: (users: User.Fragment[]) => void
   onUserPick?: (user: User.Fragment) => void
 }
 
